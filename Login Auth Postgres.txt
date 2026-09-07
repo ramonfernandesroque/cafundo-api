@@ -1,0 +1,98 @@
+// backend/authController.js
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../prismaClient';
+
+export const login = async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = await prisma.user.findUnique({ where: { username } });
+  if (!user) return res.status(401).json({ message: 'Usuário não encontrado' });
+
+  const passwordMatch = await bcrypt.compare(password, user.password);
+  if (!passwordMatch) return res.status(401).json({ message: 'Senha inválida' });
+
+  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  res.json({ token });
+};
+
+export const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Acesso negado' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch {
+    res.status(403).json({ message: 'Token inválido' });
+  }
+};
+
+// frontend/Login.tsx
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const Login = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const response = await fetch('http://localhost:3000/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      localStorage.setItem('token', data.token);
+      navigate('/');
+    } else {
+      alert(data.message);
+    }
+  };
+
+  return (
+    <div>
+      <h2>Login</h2>
+      <form onSubmit={handleLogin}>
+        <input type='text' placeholder='Usuário' value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input type='password' placeholder='Senha' value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button type='submit'>Entrar</button>
+      </form>
+    </div>
+  );
+};
+export default Login;
+
+// frontend/ProtectedRoute.tsx
+import { Navigate, Outlet } from 'react-router-dom';
+
+const ProtectedRoute = () => {
+  const token = localStorage.getItem('token');
+  return token ? <Outlet /> : <Navigate to='/login' />;
+};
+export default ProtectedRoute;
+
+// frontend/App.tsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './Login';
+import Index from './Index';
+import ProtectedRoute from './ProtectedRoute';
+
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path='/login' element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path='/' element={<Index />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+};
+export default App;

@@ -1,0 +1,859 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cafundo API",
+    "version": "3.0.0",
+    "description": "API de ordens de serviço, clientes e caixa (Next.js + Prisma + PostgreSQL). Importe este arquivo no Postman via Import > File. Troque o `servers[0].url` (ou a variável `baseUrl` gerada) pelo host desejado. Exemplos usam a massa de teste de usinagem (clientes como \"Metalúrgica Ferrão Ltda\")."
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Desenvolvimento local" }
+  ],
+  "tags": [
+    { "name": "Ordem de Serviço", "description": "CRUD + paginação + criação em lote" },
+    { "name": "Cliente", "description": "CRUD + busca por nome + paginação" },
+    { "name": "Caixa", "description": "Transações e indicadores do mês atual vs anterior" },
+    { "name": "Relatórios", "description": "Agregações com filtros de período" },
+    { "name": "Serviço", "description": "Cadastro simples de serviços" },
+    { "name": "Compat", "description": "Aliases em inglês de ordemServico (mesmo comportamento)" },
+    { "name": "Auth", "description": "Registro, login e login com JWT" }
+  ],
+  "paths": {
+    "/api/ordemServico": {
+      "get": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Lista ordens de serviço (mais recentes primeiro)",
+        "responses": {
+          "200": {
+            "description": "Array de ordens",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "id": "83a0fa76-0233-405c-9713-4b7d98153557",
+                    "cliente": "Metalúrgica Ferrão Ltda",
+                    "preco": "1250.75",
+                    "descricao": "01 - Torneamento de eixo em aço 1045 Ø80 x 600mm",
+                    "data": "2026-08-12T00:00:00.000Z",
+                    "material": "450.25",
+                    "maoDeObra": "800.50",
+                    "formaDePagamento": "PIX"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Cria ordem de serviço",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OrdemServicoInput" },
+              "example": {
+                "cliente": "Metalúrgica Ferrão Ltda",
+                "preco": 1250.75,
+                "descricao": "Torneamento de eixo em aço 1045 Ø80 x 600mm",
+                "data": "2026-09-06T10:00:00.000Z",
+                "maoDeObra": 800.5,
+                "material": 450.25,
+                "formaDePagamento": "PIX"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Ordem criada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } },
+          "500": { "$ref": "#/components/responses/Erro500" }
+        }
+      }
+    },
+    "/api/ordemServico/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "example": "83a0fa76-0233-405c-9713-4b7d98153557" }
+      ],
+      "get": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Busca ordem por id",
+        "responses": {
+          "200": { "description": "Ordem encontrada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } },
+          "404": { "description": "Não encontrada", "content": { "application/json": { "example": { "error": "Ordem de Serviço não encontrada" } } } }
+        }
+      },
+      "put": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Atualiza ordem por id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OrdemServicoInput" },
+              "example": {
+                "cliente": "Usinagem Precisa Tonelli",
+                "preco": 980.0,
+                "descricao": "Fresamento de flange em ferro fundido GG25",
+                "data": "2026-09-05T14:00:00.000Z",
+                "maoDeObra": 600.0,
+                "material": 380.0,
+                "formaDePagamento": "BOLETO_BANCARIO_30"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Ordem atualizada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } },
+          "500": { "$ref": "#/components/responses/Erro500" }
+        }
+      },
+      "delete": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Exclui ordem por id",
+        "responses": {
+          "200": { "description": "Ordem excluída (retorna o registro)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } }
+        }
+      }
+    },
+    "/api/ordemServico/page": {
+      "get": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Lista ordens com paginação",
+        "parameters": [
+          { "name": "_page", "in": "query", "schema": { "type": "integer", "default": 1 }, "example": 1 },
+          { "name": "_limit", "in": "query", "schema": { "type": "integer", "default": 20 }, "example": 5 }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de ordens",
+            "content": {
+              "application/json": {
+                "example": {
+                  "ordemServicos": [
+                    {
+                      "id": "83a0fa76-0233-405c-9713-4b7d98153557",
+                      "cliente": "Metalúrgica Ferrão Ltda",
+                      "preco": "1250.75",
+                      "descricao": "Torneamento de eixo em aço 1045",
+                      "data": "2026-08-12T00:00:00.000Z",
+                      "material": "450.25",
+                      "maoDeObra": "800.50",
+                      "formaDePagamento": "PIX"
+                    }
+                  ],
+                  "pagination": { "currentPage": 1, "totalPages": 50, "totalItems": 250 }
+                }
+              }
+            }
+          },
+          "400": { "description": "Paginação inválida", "content": { "application/json": { "example": { "error": "Parâmetros de paginação inválidos" } } } }
+        }
+      }
+    },
+    "/api/ordemServico/all": {
+      "get": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Lista todas as ordens (sem paginação)",
+        "responses": {
+          "200": { "description": "Array de ordens", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/OrdemServico" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Cria ordens em lote (body = array)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": [
+                {
+                  "cliente": "Retífica Estrela Eixos",
+                  "preco": 700.0,
+                  "descricao": "Retífica cilíndrica de eixo virabrequim",
+                  "data": "2026-09-06T10:00:00.000Z",
+                  "maoDeObra": 450.0,
+                  "material": 250.0,
+                  "formaDePagamento": "TRANSFERENCIA_BANCARIA"
+                },
+                {
+                  "cliente": "CNC Modelo Matrizes",
+                  "preco": 2100.0,
+                  "descricao": "Fresamento CNC de cavidade em molde P20",
+                  "data": "2026-09-06T11:00:00.000Z",
+                  "maoDeObra": 1400.0,
+                  "material": 700.0,
+                  "formaDePagamento": "BOLETO_BANCARIO_60"
+                }
+              ]
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Resultado do createMany", "content": { "application/json": { "example": { "count": 2 } } } },
+          "400": { "description": "Body inválido", "content": { "application/json": { "example": { "error": "Deve ser um array de ordens de serviço" } } } }
+        }
+      }
+    },
+    "/api/ordemServico/_proxyOrdemServico": {
+      "post": {
+        "tags": ["Ordem de Serviço"],
+        "summary": "Cria ordem (proxy interno, mesmo contrato do POST /ordemServico)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/OrdemServicoInput" },
+              "example": {
+                "cliente": "Tornearia Irmãos Baldin",
+                "preco": 540.0,
+                "descricao": "Torneamento CNC de bucha em bronze Ø120 x 90mm",
+                "data": "2026-09-06T10:00:00.000Z",
+                "maoDeObra": 340.0,
+                "material": 200.0,
+                "formaDePagamento": "DINHEIRO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Ordem criada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } }
+        }
+      }
+    },
+    "/api/cliente": {
+      "get": {
+        "tags": ["Cliente"],
+        "summary": "Lista clientes ou busca por nome (?nome=)",
+        "parameters": [
+          { "name": "nome", "in": "query", "required": false, "schema": { "type": "string" }, "example": "Ferrão", "description": "Quando informado, retorna só [{nome}] com contains case-insensitive" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de clientes (ou só nomes na busca)",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "todos": { "value": [{ "id": "fd56f38d-e3f8-43b1-ba8ba-da40994ec4d", "nome": "Metalúrgica Ferrão Ltda", "documento": "12345678000101", "telefone": "1133331001", "celular": "11999991001", "email": "contato@ferrao.ind.br", "endereco": "Rua das Forjas, 150", "cidade": "São Paulo", "bairro": "Mooca", "cep": "03110010" }] },
+                  "busca": { "value": [{ "nome": "Metalúrgica Ferrão Ltda" }] }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Cliente"],
+        "summary": "Cria cliente (documento e email são únicos)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClienteInput" },
+              "example": {
+                "nome": "Usinagem Teste Postman Ltda",
+                "documento": "99999999000199",
+                "telefone": "1133331999",
+                "celular": "11999991999",
+                "email": "postman@teste.local",
+                "endereco": "Rua dos Testes, 99",
+                "cidade": "São Paulo",
+                "bairro": "Lapa",
+                "cep": "05000099"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Cliente criado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } } }
+        }
+      }
+    },
+    "/api/cliente/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Cliente"],
+        "summary": "Busca cliente por id",
+        "responses": {
+          "200": { "description": "Cliente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } } },
+          "404": { "description": "Não encontrado", "content": { "application/json": { "example": { "error": "Cliente não encontrado" } } } }
+        }
+      },
+      "put": {
+        "tags": ["Cliente"],
+        "summary": "Atualiza cliente por id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClienteInput" },
+              "example": {
+                "nome": "Usinagem Teste Postman Ltda",
+                "documento": "99999999000199",
+                "telefone": "1133331888",
+                "celular": "11999991888",
+                "email": "postman@teste.local",
+                "endereco": "Rua dos Testes, 100",
+                "cidade": "São Paulo",
+                "bairro": "Lapa",
+                "cep": "05000100"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Cliente atualizado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["Cliente"],
+        "summary": "Exclui cliente por id",
+        "responses": {
+          "200": { "description": "Cliente excluído (retorna o registro)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } } }
+        }
+      }
+    },
+    "/api/cliente/page": {
+      "get": {
+        "tags": ["Cliente"],
+        "summary": "Lista clientes com paginação (ordem alfabética)",
+        "parameters": [
+          { "name": "_page", "in": "query", "schema": { "type": "integer", "default": 1 }, "example": 1 },
+          { "name": "_limit", "in": "query", "schema": { "type": "integer", "default": 20 }, "example": 5 }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de clientes",
+            "content": {
+              "application/json": {
+                "example": {
+                  "clientes": [{ "nome": "Brunimento Tubos Norte" }],
+                  "pagination": { "currentPage": 1, "totalPages": 2, "totalItems": 10 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/caixa": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Lista transações (404 se vazio)",
+        "responses": {
+          "200": {
+            "description": "Transações",
+            "content": {
+              "application/json": {
+                "example": [
+                  { "id": "094682be-1679-4219-a249-a37eb59907a2", "data": "2025-05-04T00:00:00.000Z", "descricao": "Serviço de torneamento - Metalúrgica Ferrão", "categorias": "SERVICOS", "tipo": "ENTRADA", "valor": "1250.75" }
+                ]
+              }
+            }
+          },
+          "404": { "description": "Sem transações", "content": { "application/json": { "example": { "message": "Nenhuma transação encontrada" } } } }
+        }
+      },
+      "post": {
+        "tags": ["Caixa"],
+        "summary": "Cria transação",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransacaoInput" },
+              "example": {
+                "data": "2026-09-06",
+                "descricao": "Serviço de fresamento - Fresadora Central do ABC",
+                "categorias": "SERVICOS",
+                "tipo": "ENTRADA",
+                "valor": 1850.0
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Transação criada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransacaoCaixa" } } } },
+          "400": { "description": "Campos inválidos", "content": { "application/json": { "example": { "error": "Campos obrigatórios: data, descricao, categorias, tipo, valor" } } } }
+        }
+      }
+    },
+    "/api/caixa/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Busca transação por id",
+        "responses": {
+          "200": { "description": "Transação", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransacaoCaixa" } } } },
+          "404": { "description": "Não encontrada", "content": { "application/json": { "example": { "error": "Transação não encontrada" } } } }
+        }
+      },
+      "put": {
+        "tags": ["Caixa"],
+        "summary": "Atualiza transação por id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransacaoInput" },
+              "example": {
+                "data": "2026-09-06",
+                "descricao": "Serviço de fresamento - valor corrigido",
+                "categorias": "SERVICOS",
+                "tipo": "ENTRADA",
+                "valor": 1900.0
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Transação atualizada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransacaoCaixa" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["Caixa"],
+        "summary": "Exclui transação por id",
+        "responses": {
+          "200": { "description": "Transação excluída (retorna o registro)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransacaoCaixa" } } } }
+        }
+      }
+    },
+    "/api/caixa/page": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Lista transações com paginação e filtro de período",
+        "parameters": [
+          { "name": "_page", "in": "query", "schema": { "type": "integer", "default": 1 }, "example": 1 },
+          { "name": "_limit", "in": "query", "schema": { "type": "integer", "default": 20 }, "example": 5 },
+          { "name": "filtro", "in": "query", "required": false, "schema": { "type": "string", "enum": ["hoje", "semana", "mes", "ano"] }, "example": "mes" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de transações",
+            "content": {
+              "application/json": {
+                "example": {
+                  "transacoesCaixa": [{ "descricao": "Serviço de torneamento", "tipo": "ENTRADA", "valor": "1250.75" }],
+                  "pagination": { "currentPage": 1, "totalPages": 3, "totalItems": 12 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/caixa/receita-total": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Receita (entradas) do mês atual vs anterior",
+        "responses": {
+          "200": {
+            "description": "Indicador",
+            "content": {
+              "application/json": {
+                "example": {
+                  "receitaTotal": { "value": "R$ 1.000,00", "diff": "+100.0%", "positive": true, "detalhes": { "entradas": "R$ 1.000,00", "saidas": "R$ 500,00" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/caixa/entrada-total": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Total de entradas do mês atual vs anterior",
+        "responses": {
+          "200": {
+            "description": "Indicador",
+            "content": { "application/json": { "example": { "entradaTotal": { "value": "R$ 1.000,00", "diff": "+100.0%", "positive": true } } } }
+          }
+        }
+      }
+    },
+    "/api/caixa/despesas-total": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Total de saídas do mês atual vs anterior",
+        "responses": {
+          "200": {
+            "description": "Indicador",
+            "content": { "application/json": { "example": { "despesasTotal": { "value": "R$ 500,00", "diff": "+10.0%", "positive": true } } } }
+          }
+        }
+      }
+    },
+    "/api/caixa/lucro": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Margem de lucro do mês atual vs anterior",
+        "responses": {
+          "200": {
+            "description": "Indicador",
+            "content": { "application/json": { "example": { "margemLucro": { "value": "50.0%", "diff": "+100.0%", "positive": true } } } }
+          }
+        }
+      }
+    },
+    "/api/caixa/lucro-liquido": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Lucro líquido (entradas − saídas) do mês",
+        "responses": {
+          "200": {
+            "description": "Indicador",
+            "content": {
+              "application/json": {
+                "example": {
+                  "lucroLiquido": { "value": "R$ 500,00", "diff": "+25.0%", "positive": true, "detalhes": { "entradas": "R$ 1.000,00", "saidas": "R$ 500,00", "liquido": "R$ 500,00" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/caixa/receitas-vs-despesas": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Receitas vs despesas dos últimos 5 meses",
+        "responses": {
+          "200": {
+            "description": "Série mensal (mais antigo → mais recente)",
+            "content": { "application/json": { "example": { "data": [{ "month": "mai", "receitas": 1000, "despesas": 500 }] } } }
+          }
+        }
+      }
+    },
+    "/api/caixa/distribuicao-por-categoria-entrada": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Distribuição das entradas do mês por categoria",
+        "responses": {
+          "200": {
+            "description": "Distribuição",
+            "content": { "application/json": { "example": { "distribuicaoPorCategoria": [{ "categoria": "SERVICOS", "valor": "1000.00", "percentual": "100.00" }], "totalReceita": 1000 } } }
+          }
+        }
+      }
+    },
+    "/api/caixa/distribuicao-por-categoria-saida": {
+      "get": {
+        "tags": ["Caixa"],
+        "summary": "Distribuição das saídas do mês por categoria",
+        "responses": {
+          "200": {
+            "description": "Distribuição",
+            "content": { "application/json": { "example": { "distribuicaoPorCategoria": [{ "categoria": "MATERIAIS", "valor": "500.00", "percentual": "100.00" }], "totalDespesas": 500 } } }
+          }
+        }
+      }
+    },
+    "/api/relatorios/receitas-vs-despesas": {
+      "get": {
+        "tags": ["Relatórios"],
+        "summary": "Receitas vs despesas com filtro (dia|semana|periodo|N dias)",
+        "parameters": [
+          { "name": "filtro", "in": "query", "schema": { "type": "string" }, "example": "30", "description": "'dia', 'semana', 'periodo' (exige startDate+endDate) ou número de dias, ex. 30" },
+          { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" }, "example": "2026-08-01" },
+          { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" }, "example": "2026-09-06" },
+          { "name": "modo", "in": "query", "schema": { "type": "string", "enum": ["diario", "mensal"] }, "description": "Opcional; sem ele, agrupa por dia se período < 35 dias" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Série ordenada",
+            "content": { "application/json": { "example": { "data": [{ "label": "set/2026", "receitas": 1000, "despesas": 500 }] } } }
+          },
+          "400": { "description": "Período incompleto", "content": { "application/json": { "example": { "error": "startDate e endDate são obrigatórios para o filtro 'periodo'" } } } }
+        }
+      }
+    },
+    "/api/relatorios/distribuicao-por-categoria-entrada": {
+      "get": {
+        "tags": ["Relatórios"],
+        "summary": "Entradas do mês agrupadas por categoria e data",
+        "responses": {
+          "200": {
+            "description": "Distribuição com label de data",
+            "content": { "application/json": { "example": { "distribuicaoPorCategoria": [{ "categoria": "SERVICOS", "valor": "1000.00", "percentual": "100.00", "label": "06/09/2026" }], "totalReceita": 1000 } } }
+          }
+        }
+      }
+    },
+    "/api/relatorios/distribuicao-por-categoria-saida": {
+      "get": {
+        "tags": ["Relatórios"],
+        "summary": "Saídas por categoria e data, com filtro de período",
+        "parameters": [
+          { "name": "filtro", "in": "query", "schema": { "type": "string" }, "example": "30", "description": "'periodo' (exige startDate+endDate) ou número de dias; vazio = mês atual" },
+          { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" }, "example": "2026-08-01" },
+          { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" }, "example": "2026-09-06" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Distribuição com label de data",
+            "content": { "application/json": { "example": { "distribuicaoPorCategoria": [{ "categoria": "MATERIAIS", "valor": "500.00", "percentual": "100.00", "label": "06/09/2026" }], "totalDespesas": 500 } } }
+          }
+        }
+      }
+    },
+    "/api/servico": {
+      "get": {
+        "tags": ["Serviço"],
+        "summary": "Lista serviços",
+        "responses": {
+          "200": {
+            "description": "Array de serviços",
+            "content": { "application/json": { "example": [{ "id": "uuid", "servico": "Reparo Elétrico", "data": "2025-02-09T10:00:00.000Z", "valorTotal": "200.0", "material": "75.5", "maoDeObra": "124.5" }] } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Serviço"],
+        "summary": "Cria serviço",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ServicoInput" },
+              "example": { "servico": "Retífica plana de base de molde", "data": "2026-09-06T10:00:00.000Z", "valorTotal": 850.0, "material": 300.0, "maoDeObra": 550.0 }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Serviço criado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Servico" } } } }
+        }
+      }
+    },
+    "/api/serviceOrder": {
+      "get": {
+        "tags": ["Compat"],
+        "summary": "Alias de /ordemServico (lista, 404 se vazio)",
+        "responses": {
+          "200": { "description": "Array de ordens", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/OrdemServico" } } } } },
+          "404": { "description": "Sem ordens", "content": { "application/json": { "example": { "message": "Nenhuma ordem de serviço encontrada" } } } }
+        }
+      }
+    },
+    "/api/serviceOrder/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Compat"],
+        "summary": "Busca ordem por id",
+        "responses": {
+          "200": { "description": "Ordem", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } },
+          "404": { "description": "Não encontrada", "content": { "application/json": { "example": { "error": "Ordem de Serviço não encontrada" } } } }
+        }
+      },
+      "put": {
+        "tags": ["Compat"],
+        "summary": "Atualiza ordem por id",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServicoInput" } } } },
+        "responses": {
+          "200": { "description": "Ordem atualizada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["Compat"],
+        "summary": "Exclui ordem por id",
+        "responses": {
+          "200": { "description": "Ordem excluída", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrdemServico" } } } }
+        }
+      }
+    },
+    "/api/serviceOrders": {
+      "get": {
+        "tags": ["Compat"],
+        "summary": "Alias plural de /ordemServico (lista, 404 se vazio)",
+        "responses": {
+          "200": { "description": "Array de ordens", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/OrdemServico" } } } } },
+          "404": { "description": "Sem ordens", "content": { "application/json": { "example": { "message": "Nenhuma ordem de serviço encontrada" } } } }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Registro ou login sem token (action = register | login)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginAction" },
+              "examples": {
+                "register": { "value": { "action": "register", "email": "postman@teste.local", "password": "trocar123" } },
+                "login": { "value": { "action": "login", "email": "postman@teste.local", "password": "trocar123" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login ok (user sem senha)", "content": { "application/json": { "example": { "message": "Login bem-sucedido", "user": { "id": "uuid", "email": "postman@teste.local", "createdAt": "2026-09-06T00:00:00.000Z" } } } } },
+          "201": { "description": "Usuário criado", "content": { "application/json": { "example": { "message": "Usuário criado com sucesso", "user": { "email": "postman@teste.local", "createdAt": "2026-09-06T00:00:00.000Z" } } } } },
+          "400": { "description": "Dados/ação inválidos", "content": { "application/json": { "example": { "error": "Email e senha são obrigatórios." } } } },
+          "401": { "description": "Credenciais inválidas", "content": { "application/json": { "example": { "error": "Senha incorreta" } } } }
+        }
+      }
+    },
+    "/api/login-jwt": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login com JWT (expira em 1h)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              },
+              "example": { "email": "postman@teste.local", "password": "trocar123" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token gerado", "content": { "application/json": { "example": { "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." } } } },
+          "401": { "description": "Credenciais inválidas", "content": { "application/json": { "example": { "error": "Usuário não encontrado" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrdemServico": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "cliente": { "type": "string", "example": "Metalúrgica Ferrão Ltda" },
+          "preco": { "type": "string", "example": "1250.75", "description": "Decimal serializado como string" },
+          "descricao": { "type": "string" },
+          "data": { "type": "string", "format": "date-time" },
+          "material": { "type": "string", "example": "450.25" },
+          "maoDeObra": { "type": "string", "example": "800.50" },
+          "formaDePagamento": { "$ref": "#/components/schemas/FormaDePagamento" }
+        }
+      },
+      "OrdemServicoInput": {
+        "type": "object",
+        "required": ["cliente", "preco", "descricao", "data", "maoDeObra", "material", "formaDePagamento"],
+        "properties": {
+          "cliente": { "type": "string" },
+          "preco": { "type": "number" },
+          "descricao": { "type": "string" },
+          "data": { "type": "string", "format": "date-time" },
+          "maoDeObra": { "type": "number" },
+          "material": { "type": "number" },
+          "formaDePagamento": { "$ref": "#/components/schemas/FormaDePagamento" }
+        }
+      },
+      "FormaDePagamento": {
+        "type": "string",
+        "enum": ["CARTAO_DE_CREDITO", "CARTAO_DE_DEBITO", "TRANSFERENCIA_BANCARIA", "BOLETO_BANCARIO", "BOLETO_BANCARIO_10", "BOLETO_BANCARIO_20", "BOLETO_BANCARIO_30", "BOLETO_BANCARIO_60", "BOLETO_BANCARIO_90", "DINHEIRO", "PIX", "OUTROS"]
+      },
+      "Cliente": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "documento": { "type": "string" },
+          "telefone": { "type": "string" },
+          "celular": { "type": "string" },
+          "email": { "type": "string" },
+          "endereco": { "type": "string" },
+          "cidade": { "type": "string" },
+          "bairro": { "type": "string" },
+          "cep": { "type": "string" }
+        }
+      },
+      "ClienteInput": {
+        "type": "object",
+        "required": ["nome", "documento", "telefone", "celular", "email", "endereco", "cidade", "bairro", "cep"],
+        "properties": {
+          "nome": { "type": "string" },
+          "documento": { "type": "string", "description": "Único" },
+          "telefone": { "type": "string" },
+          "celular": { "type": "string" },
+          "email": { "type": "string", "description": "Único" },
+          "endereco": { "type": "string" },
+          "cidade": { "type": "string" },
+          "bairro": { "type": "string" },
+          "cep": { "type": "string" }
+        }
+      },
+      "TransacaoCaixa": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "data": { "type": "string", "format": "date-time" },
+          "descricao": { "type": "string" },
+          "categorias": { "$ref": "#/components/schemas/Categoria" },
+          "tipo": { "$ref": "#/components/schemas/TipoTransacao" },
+          "valor": { "type": "string", "example": "1250.75", "description": "Decimal serializado como string" }
+        }
+      },
+      "TransacaoInput": {
+        "type": "object",
+        "required": ["data", "descricao", "categorias", "tipo", "valor"],
+        "properties": {
+          "data": { "type": "string", "format": "date", "example": "2026-09-06" },
+          "descricao": { "type": "string" },
+          "categorias": { "$ref": "#/components/schemas/Categoria" },
+          "tipo": { "$ref": "#/components/schemas/TipoTransacao" },
+          "valor": { "type": "number" }
+        }
+      },
+      "Categoria": {
+        "type": "string",
+        "enum": ["VENDAS", "SERVICOS", "INVESTIMENTOS", "REEMBOLSOS", "OUTROS_RECEBIMENTOS", "SALARIO", "ALUGUEL", "MARKETING", "IMPOSTOS", "TRANSPORTE", "FORNECEDORES", "MATERIAIS", "MANUTENCAO", "AGUA", "LUZ", "INTERNET", "OUTRAS_DESPESAS"]
+      },
+      "TipoTransacao": { "type": "string", "enum": ["ENTRADA", "SAIDA"] },
+      "Servico": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "servico": { "type": "string" },
+          "data": { "type": "string", "format": "date-time" },
+          "valorTotal": { "type": "string", "example": "200.0" },
+          "material": { "type": "string", "example": "75.5" },
+          "maoDeObra": { "type": "string", "example": "124.5" }
+        }
+      },
+      "ServicoInput": {
+        "type": "object",
+        "required": ["servico", "data", "valorTotal", "material", "maoDeObra"],
+        "properties": {
+          "servico": { "type": "string" },
+          "data": { "type": "string", "format": "date-time" },
+          "valorTotal": { "type": "number" },
+          "material": { "type": "number" },
+          "maoDeObra": { "type": "number" }
+        }
+      },
+      "LoginAction": {
+        "type": "object",
+        "required": ["action", "email", "password"],
+        "properties": {
+          "action": { "type": "string", "enum": ["register", "login"] },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "Erro500": {
+        "description": "Erro interno",
+        "content": { "application/json": { "schema": { "type": "object", "properties": { "error": { "type": "string" } } } } }
+      }
+    }
+  }
+}

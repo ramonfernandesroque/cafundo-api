@@ -1,0 +1,1447 @@
+{
+  "info": {
+    "name": "Cafundo API",
+    "_postman_id": "cafundo-api-go-live",
+    "description": "API do sistema Cafundo (Usinagem).\n\nCOMO USAR:\n1. Ajuste a variável `baseUrl` (local: http://localhost:3000 | túnel: https://SUA-URL/api via proxy do front — nesse caso aponte para https://SUA-URL/api).\n2. Rode **Auth > Login JWT** com um usuário ADMIN — o token é salvo automaticamente na variável `token` e usado nas demais pastas.\n3. Perfis: ADMIN (tudo) e OPERADOR (OS, orçamentos, clientes; sem caixa/relatórios/auditoria/usuários).\n\nREGRAS DE NEGÓCIO:\n- Criar OS lança ENTRADA/SERVICOS no caixa (vinculado). Editar reflete no caixa. Excluir remove o lançamento e reabre o orçamento de origem.\n- Orçamento não movimenta caixa; ao converter vira OS + caixa.\n- Lançamento de OS é somente-leitura no caixa (409 ao editar/excluir).\n- Dinheiro sempre como string decimal (\"1500.75\").",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": {
+      "token": "{{token}}"
+    }
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Sem autenticação. Rode o Login JWT primeiro.",
+      "item": [
+        {
+          "name": "Login JWT",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/login-jwt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login-jwt"
+              ]
+            },
+            "description": "Autentica e retorna {token, role}. O teste salva o token na variável `token`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@empresa.com\",\n  \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.token) { pm.collectionVariables.set('token', d.token); console.log('Token salvo. Role:', d.role); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (legado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "Endpoint antigo de login.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@empresa.com\",\n  \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
+    },
+    {
+      "name": "Ordens de Serviço",
+      "description": "",
+      "item": [
+        {
+          "name": "Listar todas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico"
+              ]
+            },
+            "description": "Lista sem paginação (uso interno)."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico"
+              ]
+            },
+            "description": "201. Cria a OS + lançamento vinculado no caixa. 401 sem token.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Metalúrgica Ferraz Ltda\",\n  \"preco\": \"1500.75\",\n  \"descricao\": \"Torneamento CNC de eixo em aço 1045 — pedido 101\",\n  \"data\": \"2026-09-07T00:00:00.000Z\",\n  \"material\": \"400.00\",\n  \"maoDeObra\": \"800.00\",\n  \"formaDePagamento\": \"PIX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico",
+                ":id"
+              ]
+            },
+            "description": "Troque :id."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico",
+                ":id"
+              ]
+            },
+            "description": "200. Atualiza OS e reflete valor/data/descrição no caixa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Metalúrgica Ferraz Ltda\",\n  \"preco\": \"1800.00\",\n  \"descricao\": \"Torneamento CNC de eixo em aço 1045 — pedido 101\",\n  \"data\": \"2026-09-07T00:00:00.000Z\",\n  \"material\": \"400.00\",\n  \"maoDeObra\": \"800.00\",\n  \"formaDePagamento\": \"PIX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico",
+                ":id"
+              ]
+            },
+            "description": "200. Exclui OS + lançamento do caixa; orçamento de origem volta a PENDENTE."
+          },
+          "response": []
+        },
+        {
+          "name": "Paginar + filtrar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico/page?_page=1&_limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico",
+                "page"
+              ],
+              "query": [
+                {
+                  "key": "_page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "_limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "cliente",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "descricao",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "de",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ate",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Filtros: cliente, descricao (contains), de/ate (AAAA-MM-DD)."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar em massa",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordemServico/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordemServico",
+                "all"
+              ]
+            },
+            "description": "201. Array de OS; cada uma ganha lançamento no caixa.",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"cliente\": \"Metalúrgica Ferraz Ltda\",\n    \"preco\": \"1500.75\",\n    \"descricao\": \"Torneamento CNC de eixo em aço 1045 — pedido 101\",\n    \"data\": \"2026-09-07T00:00:00.000Z\",\n    \"material\": \"400.00\",\n    \"maoDeObra\": \"800.00\",\n    \"formaDePagamento\": \"PIX\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orçamentos",
+      "description": "",
+      "item": [
+        {
+          "name": "Listar todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento"
+              ]
+            },
+            "description": "Lista sem paginação."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento"
+              ]
+            },
+            "description": "201. NÃO movimenta o caixa. status: PENDENTE|APROVADO|RECUSADO|EXPIRADO.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Metalúrgica Ferraz Ltda\",\n  \"preco\": \"1500.75\",\n  \"descricao\": \"Torneamento CNC de eixo em aço 1045 — pedido 101\",\n  \"data\": \"2026-09-07T00:00:00.000Z\",\n  \"material\": \"400.00\",\n  \"maoDeObra\": \"800.00\",\n  \"formaDePagamento\": \"PIX\",\n  \"validade\": \"2026-10-07T00:00:00.000Z\",\n  \"status\": \"PENDENTE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento",
+                ":id"
+              ]
+            },
+            "description": "Troque :id."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento",
+                ":id"
+              ]
+            },
+            "description": "200. Se APROVADO, propaga para OS + caixa. Marcar APROVADO aqui também converte.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"preco\": \"1600.00\",\n  \"descricao\": \"Revisado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento",
+                ":id"
+              ]
+            },
+            "description": "200. Se APROVADO, exclui em cascata (caixa + OS + orçamento)."
+          },
+          "response": []
+        },
+        {
+          "name": "Paginar + filtrar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento/page?_page=1&_limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento",
+                "page"
+              ],
+              "query": [
+                {
+                  "key": "_page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "_limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "cliente",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "descricao",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "de",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ate",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Filtros: cliente, descricao, status, de/ate."
+          },
+          "response": []
+        },
+        {
+          "name": "Converter em OS",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamento/convert",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamento",
+                "convert"
+              ]
+            },
+            "description": "201 {orcamento, ordemServico}. Bloqueia RECUSADO/APROVADO/expirado (400).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"COLE-O-ID-DO-ORCAMENTO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Caixa (ADMIN)",
+      "description": "Exige ADMIN. Lançamentos com origem em OS retornam 409 em PUT/DELETE.",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa"
+              ]
+            },
+            "description": "Todas as transações. 401/403 sem ADMIN."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar manual",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa"
+              ]
+            },
+            "description": "201. Lançamento manual (ordemServicoId nulo).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"2026-09-07T00:00:00.000Z\",\n  \"descricao\": \"Venda balcão\",\n  \"categorias\": \"VENDAS\",\n  \"tipo\": \"ENTRADA\",\n  \"valor\": \"250.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                ":id"
+              ]
+            },
+            "description": "Troque :id."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                ":id"
+              ]
+            },
+            "description": "200. 409 se for lançamento de OS (edite pela OS).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"2026-09-07T00:00:00.000Z\",\n  \"descricao\": \"Venda balcão\",\n  \"categorias\": \"VENDAS\",\n  \"tipo\": \"ENTRADA\",\n  \"valor\": \"300.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                ":id"
+              ]
+            },
+            "description": "200. 409 se for lançamento de OS (exclua a OS)."
+          },
+          "response": []
+        },
+        {
+          "name": "Paginar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/page?_page=1&_limit=15&filtro=mes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "page"
+              ],
+              "query": [
+                {
+                  "key": "_page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "_limit",
+                  "value": "15",
+                  "disabled": false
+                },
+                {
+                  "key": "filtro",
+                  "value": "mes",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "filtro: hoje|semana|mes|ano."
+          },
+          "response": []
+        },
+        {
+          "name": "Receita total",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/receita-total",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "receita-total"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Despesa total",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/despesas-total",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "despesas-total"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Entradas total",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/entrada-total",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "entrada-total"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Lucro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/lucro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "lucro"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Lucro líquido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/lucro-liquido",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "lucro-liquido"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Receitas vs despesas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/receitas-vs-despesas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "receitas-vs-despesas"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Distribuição entradas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/distribuicao-por-categoria-entrada",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "distribuicao-por-categoria-entrada"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Distribuição saídas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/caixa/distribuicao-por-categoria-saida",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "caixa",
+                "distribuicao-por-categoria-saida"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "description": "",
+      "item": [
+        {
+          "name": "Buscar (?nome=)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ],
+              "query": [
+                {
+                  "key": "nome",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Query ?nome= busca parcial."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            },
+            "description": "201. Documento só dígitos (CPF 11 / CNPJ 14).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Exemplo\",\n  \"documento\": \"12345678901\",\n  \"telefone\": \"1134567890\",\n  \"celular\": \"11987654321\",\n  \"email\": \"cliente@exemplo.com\",\n  \"endereco\": \"Rua A, 1\",\n  \"cidade\": \"São Paulo\",\n  \"bairro\": \"Centro\",\n  \"cep\": \"01001-000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                ":id"
+              ]
+            },
+            "description": "Troque :id."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                ":id"
+              ]
+            },
+            "description": "200.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente Exemplo\",\n  \"documento\": \"12345678901\",\n  \"telefone\": \"1134567890\",\n  \"celular\": \"11987654321\",\n  \"email\": \"cliente@exemplo.com\",\n  \"endereco\": \"Rua A, 1\",\n  \"cidade\": \"São Paulo\",\n  \"bairro\": \"Centro\",\n  \"cep\": \"01001-000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                ":id"
+              ]
+            },
+            "description": "200."
+          },
+          "response": []
+        },
+        {
+          "name": "Paginar + filtrar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/page?_page=1&_limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                "page"
+              ],
+              "query": [
+                {
+                  "key": "_page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "_limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "nome",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "documento",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "cidade",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Filtros: nome, documento (só dígitos), cidade."
+          },
+          "response": []
+        },
+        {
+          "name": "Resumo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/resumo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                "resumo"
+              ]
+            },
+            "description": "Agregados: total, fisicas, juridicas, cidades."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Relatórios (ADMIN)",
+      "description": "",
+      "item": [
+        {
+          "name": "Receitas vs despesas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relatorios/receitas-vs-despesas?filtro=mes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relatorios",
+                "receitas-vs-despesas"
+              ],
+              "query": [
+                {
+                  "key": "filtro",
+                  "value": "mes",
+                  "disabled": false
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "modo",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Query: filtro (mes|ano|...), startDate, endDate, modo."
+          },
+          "response": []
+        },
+        {
+          "name": "Distribuição entradas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relatorios/distribuicao-por-categoria-entrada?filtro=mes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relatorios",
+                "distribuicao-por-categoria-entrada"
+              ],
+              "query": [
+                {
+                  "key": "filtro",
+                  "value": "mes",
+                  "disabled": false
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Query: filtro, startDate, endDate."
+          },
+          "response": []
+        },
+        {
+          "name": "Distribuição saídas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/relatorios/distribuicao-por-categoria-saida?filtro=mes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "relatorios",
+                "distribuicao-por-categoria-saida"
+              ],
+              "query": [
+                {
+                  "key": "filtro",
+                  "value": "mes",
+                  "disabled": false
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Query: filtro, startDate, endDate."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usuários (ADMIN)",
+      "description": "Travas: último ADMIN protegido; sem expor hash de senha.",
+      "item": [
+        {
+          "name": "Listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "Sem senhas na resposta."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "201. role: ADMIN|OPERADOR. 409 se e-mail repetido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operador@empresa.com\",\n  \"password\": \"123456\",\n  \"role\": \"OPERADOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":id"
+              ]
+            },
+            "description": "Troque :id."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":id"
+              ]
+            },
+            "description": "Troca role e/ou redefine senha. Não rebaixa o último ADMIN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ADMIN\",\n  \"password\": \"nova-senha-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/usuarios/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":id"
+              ]
+            },
+            "description": "Não exclui a si mesmo nem o último ADMIN."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auditoria (ADMIN)",
+      "description": "",
+      "item": [
+        {
+          "name": "Paginar + filtrar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auditoria/page?_page=1&_limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auditoria",
+                "page"
+              ],
+              "query": [
+                {
+                  "key": "_page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "_limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "entidade",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "acao",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "de",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "ate",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Filtros: entidade (ORDEM_SERVICO|ORCAMENTO|CAIXA|CLIENTE|USUARIO), acao (CRIAR|ATUALIZAR|EXCLUIR|CONVERTER), usuario, de/ate."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Compat / Legado",
+      "description": "Rotas de compatibilidade; prefira as canônicas.",
+      "item": [
+        {
+          "name": "Serviços listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/servico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "servico"
+              ]
+            },
+            "description": "Modelo antigo."
+          },
+          "response": []
+        },
+        {
+          "name": "Serviços criar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/servico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "servico"
+              ]
+            },
+            "description": "Modelo antigo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"servico\": \"Exemplo\",\n  \"data\": \"2026-09-07T00:00:00.000Z\",\n  \"valorTotal\": \"100.00\",\n  \"material\": \"10.00\",\n  \"maoDeObra\": \"20.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "serviceOrders listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/serviceOrders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "serviceOrders"
+              ]
+            },
+            "description": "Alias de leitura."
+          },
+          "response": []
+        },
+        {
+          "name": "serviceOrder listar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/serviceOrder",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "serviceOrder"
+              ]
+            },
+            "description": "Alias de leitura."
+          },
+          "response": []
+        },
+        {
+          "name": "serviceOrder ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/serviceOrder/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "serviceOrder",
+                ":id"
+              ]
+            },
+            "description": "GET/PUT/DELETE com mesmo fluxo vinculado."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

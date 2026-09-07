@@ -1,0 +1,38 @@
+{
+  "info": {
+    "_postman_id": "f3d4d7c1-5c73-46c1-b987-93bb3ea6fae0",
+    "name": "API de Novo Serviço",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Criar Novo Serviço",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "description": "Cabeçalho para indicar que o corpo da requisição está em formato JSON"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"cliente\": \"Cliente Teste\",\n    \"preco\": 150.00,\n    \"descricao\": \"Descrição do serviço\",\n    \"data\": \"2025-02-09T10:00:00.000Z\",\n    \"maoDeObra\": 50.00,\n    \"material\": 100.00,\n    \"formaDePagamento\": 150.00\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/novoservico",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "novoservico"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

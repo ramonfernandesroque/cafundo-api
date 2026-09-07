@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ordemServico" ALTER COLUMN "data" SET DATA TYPE TIMESTAMP(3);

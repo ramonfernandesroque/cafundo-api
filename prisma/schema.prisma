@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model ordemServico {
+  id               String                        @id @default(uuid())
+  cliente          String
+  preco            Decimal                       @db.Decimal(10, 2)
+  descricao        String
+  // Usa DateTime no Prisma, mas mapeia para DATE no PostgreSQL
+  data             DateTime                      @db.Date
+  material         Decimal                       @db.Decimal(10, 2)
+  maoDeObra        Decimal                       @db.Decimal(10, 2)
+  formaDePagamento ordemServicoformaDePagamento
+  // Autoria (email do usuário logado; null em registros antigos)
+  criadoPor        String?
+  atualizadoPor    String?
+}
+
+enum ordemServicoformaDePagamento {
+  CARTAO_DE_CREDITO
+  CARTAO_DE_DEBITO
+  TRANSFERENCIA_BANCARIA
+  BOLETO_BANCARIO
+  BOLETO_BANCARIO_10
+  BOLETO_BANCARIO_20
+  BOLETO_BANCARIO_30
+  BOLETO_BANCARIO_60
+  BOLETO_BANCARIO_90
+  DINHEIRO
+  PIX
+  OUTROS
+}
+
+model orcamento {
+  id               String                        @id @default(uuid())
+  cliente          String
+  preco            Decimal                       @db.Decimal(10, 2)
+  descricao        String
+  // Usa DateTime no Prisma, mas mapeia para DATE no PostgreSQL
+  data             DateTime                      @db.Date
+  material         Decimal                       @db.Decimal(10, 2)
+  maoDeObra        Decimal                       @db.Decimal(10, 2)
+  formaDePagamento ordemServicoformaDePagamento
+  status           orcamentoStatus               @default(PENDENTE)
+  validade         DateTime?                     @db.Date
+  ordemServicoId   String?
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  // Autoria (email do usuário logado; null em registros antigos)
+  criadoPor        String?
+  atualizadoPor    String?
+}
+
+enum orcamentoStatus {
+  PENDENTE
+  APROVADO
+  RECUSADO
+  EXPIRADO
+}
+
+model servico {
+  id         String  @id @default(uuid())
+  servico    String
+  data       DateTime
+  valorTotal Decimal
+  material   Decimal
+  maoDeObra  Decimal
+}
+
+model cliente {
+  id        String  @id @default(uuid())
+  nome      String
+  documento String  @unique
+  telefone  String
+  celular   String
+  email     String  @unique
+  endereco  String
+  cidade    String
+  bairro    String
+  cep       String
+}
+
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      UserRole @default(OPERADOR)
+  createdAt DateTime @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  OPERADOR
+}
+
+model transacoesCaixa {
+  id         String             @id @default(uuid())
+  // Usa DateTime no Prisma, mas mapeia para DATE no PostgreSQL
+  data       DateTime           @db.Date
+  descricao  String
+  categorias tiposDeCategorias
+  tipo       TipoTransacao // entrada ou saida
+  valor      Decimal            @db.Decimal(10, 2)
+  // Vínculo com a ordem de serviço que originou o lançamento.
+  // Lançamentos manuais (tela de caixa) ficam com null.
+  ordemServicoId String?
+  // Autoria (email do usuário logado; null em registros antigos)
+  criadoPor        String?
+  atualizadoPor    String?
+  @@index([ordemServicoId])
+}
+
+enum TipoTransacao {
+  ENTRADA
+  SAIDA
+}
+
+enum tiposDeCategorias {  VENDAS  
+  SERVICOS  
+  INVESTIMENTOS  
+  REEMBOLSOS  
+  OUTROS_RECEBIMENTOS  
+  SALARIO  
+  ALUGUEL  
+  MARKETING  
+  IMPOSTOS  
+  TRANSPORTE  
+  FORNECEDORES  
+  MATERIAIS  
+  MANUTENCAO  
+  AGUA  
+  LUZ  
+  INTERNET  
+  OUTRAS_DESPESAS
+
+}
+
+// Log de auditoria: quem (email) fez o quê, onde e quando.
+// Gravado nas mutações de OS, orçamento, caixa e cliente.
+model auditoria {
+  id         String        @id @default(uuid())
+  data       DateTime      @default(now())
+  usuario    String?
+  acao       auditoriaAcao
+  entidade   String
+  entidadeId String?
+  descricao  String?
+  @@index([data])
+  @@index([entidade])
+}
+
+enum auditoriaAcao {
+  CRIAR
+  ATUALIZAR
+  EXCLUIR
+  CONVERTER
+}

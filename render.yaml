@@ -1,0 +1,19 @@
+# Blueprint Render — API Cafundo (Node + Next.js + Prisma).
+# Uso: no Render, New > Blueprint > selecione o repo da API.
+# Depois preencha DATABASE_URL (Neon, pooled) e CORS_ORIGINS (URL do front).
+services:
+  - type: web
+    name: cafundo-api
+    runtime: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/cliente/resumo
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false

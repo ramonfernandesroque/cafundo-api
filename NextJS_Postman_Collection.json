@@ -1,0 +1,233 @@
+{
+    "info": {
+        "name": "Next.js API CRUD",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Ordem de Servi\u00e7o",
+            "item": [
+                {
+                    "name": "Criar Ordem de Servi\u00e7o",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"cliente\": \"Jo\\u00e3o Silva\",\n    \"preco\": 150.75,\n    \"descricao\": \"Troca de \\u00f3leo e revis\\u00e3o geral\",\n    \"data\": \"2025-02-09T14:30:00.000Z\",\n    \"maoDeObra\": 100.5,\n    \"material\": 50.25,\n    \"formaDePagamento\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/ordemServico",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "ordemServico"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Atualizar Ordem de Servi\u00e7o",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"cliente\": \"Jo\\u00e3o Silva\",\n    \"preco\": 180.0,\n    \"descricao\": \"Troca de \\u00f3leo e revis\\u00e3o completa\",\n    \"data\": \"2025-02-10T14:30:00.000Z\",\n    \"maoDeObra\": 120.0,\n    \"material\": 60.0,\n    \"formaDePagamento\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/ordemServico/:id",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "ordemServico",
+                                ":id"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Excluir Ordem de Servi\u00e7o",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "http://localhost:3000/api/ordemServico/:id",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "ordemServico",
+                                ":id"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Servi\u00e7o",
+            "item": [
+                {
+                    "name": "Criar Servi\u00e7o",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"servico\": \"Reparo El\\u00e9trico\",\n    \"data\": \"2025-02-09T10:00:00.000Z\",\n    \"valorTotal\": 200.0,\n    \"material\": 75.5,\n    \"maoDeObra\": 124.5\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/servico",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "servico"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Atualizar Servi\u00e7o",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"servico\": \"Instala\\u00e7\\u00e3o El\\u00e9trica\",\n    \"data\": \"2025-02-10T15:00:00.000Z\",\n    \"valorTotal\": 250.0,\n    \"material\": 100.0,\n    \"maoDeObra\": 150.0\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/servico/:id",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "servico",
+                                ":id"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Excluir Servi\u00e7o",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "http://localhost:3000/api/servico/:id",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "servico",
+                                ":id"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Cliente",
+            "item": [
+                {
+                    "name": "Criar Cliente",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"nome\": \"Maria Oliveira\",\n    \"documento\": \"12345678900\",\n    \"telefone\": \"11987654321\",\n    \"email\": \"maria.oliveira@email.com\",\n    \"endereco\": \"Rua das Flores, 123\",\n    \"cidade\": \"S\\u00e3o Paulo\",\n    \"bairro\": \"Centro\",\n    \"cep\": \"01000-000\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cliente",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "cliente"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Atualizar Cliente",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"nome\": \"Maria Oliveira\",\n    \"documento\": \"12345678900\",\n    \"telefone\": \"11999998888\",\n    \"email\": \"maria.oliveira.novo@email.com\",\n    \"endereco\": \"Rua das Palmeiras, 456\",\n    \"cidade\": \"S\\u00e3o Paulo\",\n    \"bairro\": \"Centro\",\n    \"cep\": \"01111-111\"\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/api/cliente/:id",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "cliente",
+                                ":id"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Excluir Cliente",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "http://localhost:3000/api/cliente/:id",
+                            "host": [
+                                "http://localhost:3000"
+                            ],
+                            "path": [
+                                "api",
+                                "cliente",
+                                ":id"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
