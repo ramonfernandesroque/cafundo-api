@@ -5,6 +5,7 @@ import prisma from "../../../lib/prisma";
 import { emailDoToken } from "../../../lib/auth";
 import { registrarAuditoria } from "../../../lib/auditoria";
 import { dinheiro } from "../../../lib/ordemServicoCaixa";
+import { reservarNumero } from "../../../lib/numeracao";
 
 const cors = (req: NextApiRequest, res: NextApiResponse) => {
   aplicarCors(req, res);
@@ -57,6 +58,7 @@ export default async function handler(
       const orcamento = await prisma.$transaction(async (tx) => {
         const criado = await tx.orcamento.create({
           data: {
+            numero: await reservarNumero(tx, "ORC"),
             cliente,
             preco: dinheiro(preco),
             descricao,

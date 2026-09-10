@@ -1,4 +1,5 @@
 import type { Prisma, ordemServicoformaDePagamento } from "@prisma/client";
+import { reservarNumero } from "./numeracao";
 
 // Cliente de transação (prisma.$transaction(async (tx) => ...)).
 export type TxClient = Prisma.TransactionClient;
@@ -49,6 +50,7 @@ export async function criarOSComCaixa(
 ) {
   const ordemServico = await tx.ordemServico.create({
     data: {
+      numero: await reservarNumero(tx, "OS"),
       cliente: dados.cliente,
       preco: dinheiro(dados.preco),
       descricao: dados.descricao,

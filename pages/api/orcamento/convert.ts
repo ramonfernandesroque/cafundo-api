@@ -87,7 +87,7 @@ export default async function handler(
           acao: "CONVERTER",
           entidade: "ORCAMENTO",
           entidadeId: orcamento.id,
-          descricao: `${orcamento.cliente} — virou OS ${ordemServico.id}`,
+          descricao: `${orcamento.cliente} — virou ${ordemServico.numero ?? `OS ${ordemServico.id}`}`,
         });
 
         return { ordemServico, atualizado };

@@ -16,6 +16,9 @@ datasource db {
 
 model ordemServico {
   id               String                        @id @default(uuid())
+  // Número humanizado do dia: OS-YYYYMMDD-SEQ (ex.: OS-20260911-001).
+  // Gerado de forma atômica na criação; sequência reinicia todo dia.
+  numero           String?                       @unique
   cliente          String
   preco            Decimal                       @db.Decimal(10, 2)
   descricao        String
@@ -46,6 +49,8 @@ enum ordemServicoformaDePagamento {
 
 model orcamento {
   id               String                        @id @default(uuid())
+  // Número humanizado do dia: ORC-YYYYMMDD-SEQ (ex.: ORC-20260911-001).
+  numero           String?                       @unique
   cliente          String
   preco            Decimal                       @db.Decimal(10, 2)
   descricao        String
@@ -147,6 +152,19 @@ enum tiposDeCategorias {  VENDAS
   INTERNET  
   OUTRAS_DESPESAS
 
+}
+
+// Contador diário para os números humanizados (OS-YYYYMMDD-SEQ,
+// ORC-YYYYMMDD-SEQ). Cada criação reserva o próximo da fila com um
+// upsert atômico (ON CONFLICT DO UPDATE), seguro sob concorrência.
+model ContadorDiario {
+  id     String @id @default(uuid())
+  tipo   String // "OS" | "ORC"
+  data   String // YYYYMMDD no fuso America/Sao_Paulo
+  ultimo Int    @default(0)
+
+  @@unique([tipo, data])
+  @@map("contador_diario")
 }
 
 // Log de auditoria: quem (email) fez o quê, onde e quando.
